@@ -41,7 +41,7 @@ const store_min_version_support = {
 
 io.on("connection", (socket) => {
   const version = socket.handshake?.query?.version || 1;
-  console.log(`Client: ${socket.id} && version: ${version}`);
+  console.log(`connected Client: ${socket.id} && version: ${version}`);
   // console.log('A client connected:', socket.id);
   socket.version = version;
   connectedClients.push(socket);
@@ -53,7 +53,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("response", (data) => {
-    console.log(data);
+    // console.log(data);
     if (data && data.status == "success") console.log(data.data);
   });
 });
@@ -109,7 +109,7 @@ app.get("/scrap_socket/getData", (req, res) => {
   }, 7000); // 5 seconds timeout
 
   // Waiting for the client's response
-  console.log(`response_${sid}_${pid}`, "response_${sid}_${pid}");
+//   console.log(`response_${sid}_${pid}`, "response_${sid}_${pid}");
   clientSocket.on(`response_${sid}_${pid}`, (data) => {
     try {
       clearTimeout(timeout);
