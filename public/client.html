@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO Client</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="status"></div>
+    <div id="status_1"></div>
+    <script>
+      _init();
+      async function _init(){
+        let isConnected = false;
+
+        const serverURL = "https://flipshope.com/";
+        // const serverURL = 'http://localhost:3030/';
+
+        try {
+          document.getElementById('status').innerText = "checking CORS";
+          await fetchData(1,'MOBGXTYZBAS4VM8K', 1)
+          
+        }
+        catch(e){
+          try {
+            document.getElementById('status').innerText = "checking CORS 2nd time, 1st filed";
+            await fetchData(2,'B07PXLXTCS',1)
+            // await fetchData(1,'MOBGY2JUPSSWCZEJ', 1)
+          }
+          catch(e){
+            document.getElementById('status').innerText = "error in CORS" + e;
+            return;
+          }
+          
+        }
+        document.getElementById('status').innerText = "conneting socket";
+        console.log("conneting socket");
+        // const socket = io.connect('https://flipshope.com/scrap_socket/', {path: "/scrap_socket/socket.io"});
+
+        
+
+
+        let version = 2;
+        const socket = io.connect(serverURL, {
+          reconnection: true, // Enable reconnection
+          reconnectionDelay: 1000, // Start with 1 second
+          reconnectionDelayMax: 5000, // Max out at 5 seconds
+          reconnectionAttempts: Infinity, // Don't stop trying to reconnect
+          path: "/scrap_socket/socket.io",
+          query: {
+            version: version,
+          },
+        });
+
+        socket.on("connect", () => {
+          document.getElementById('status').innerText = "Connected to the server";
+          console.log("Connected to the server");
+          isConnected = true;
+        });
+
+        socket.on("disconnect", () => {
+          console.log("Disconnected from server");
+          isConnected = false;
+        });
+
+        socket.on("reconnecting", (attemptNumber) => {
+          console.log(`Attempt ${attemptNumber} to reconnect to server...`);
+        });
+
+        socket.on("reconnect_error", (error) => {
+          console.error("Reconnection error:", error);
+          if (!isConnected) {
+            setTimeout(() => {
+              socket.connect();
+            }, 5000); // Retry connection every 5 seconds if not connected
+          }
+        });
+
+        socket.on("requestData", async (message) => {
+          // console.log("Received requestData request:", message);
+          let resp = { status: "failed" };
+          if (typeof message == "object" && message.sid && message.pid) {
+            let res = await fetchData(message.sid, message.pid);
+            if (res) resp = { status: "success", data: res };
+            console.log(`response_${message.sid}_${message.pid} = `, resp);
+            return socket.emit(`response_${message.sid}_${message.pid}`, resp);
+          }
+          // Reply to the server
+          return socket.emit(`response`, resp);
+        });
+
+        // Handle any errors
+        socket.on("error", (error) => {
+          console.error("Socket.IO Error:", error);
+        });
+
+        const Cookie =
+          "at=ZXlKcmFXUWlPaUl5SWl3aWRIbHdJam9pU2xkVUlpd2lZV3huSWpvaVVsTXlOVFlpZlEuZXlKemRXSWlPaUkzTTJSaFlUYzNOeTR6Tm1aa0xqUTRPVEl1T0dSak9TNDNZVFkxTnpVNVlUazVNelpFTWpOMmVHVktabkkySWl3aVlYQndUbUZ0WlNJNkltMTViblJ5WVNJc0ltbHpjeUk2SWtsRVJVRWlMQ0owYjJ0bGJsOTBlWEJsSWpvaVlYUWlMQ0p6ZEc5eVpVbGtJam9pTWpJNU55SXNJbXh6YVdRaU9pSXhaVE16T0dVME1TMDFNbU5pTFRRME9EZ3RZbVUyT1MwMk5EaGlaV0ZtWVRrNVlqQXRNVGN4TlRreU5USTFOakl6TWlJc0luQWlPaUl5TWprM0lpd2lZWFZrSWpvaWJYbHVkSEpoTFRBeVpEZGtaV00xTFRoaE1EQXROR00zTkMwNVkyWTNMVGxrTmpKa1ltVmhOV1UyTVNJc0luQndjeUk2TVRBc0ltTnBaSGdpT2lKdGVXNTBjbUV0TURKa04yUmxZelV0T0dFd01DMDBZemMwTFRsalpqY3RPV1EyTW1SaVpXRTFaVFl4SWl3aWMzVmlYM1I1Y0dVaU9qQXNJbk5qYjNCbElqb2lRa0ZUU1VNZ1VFOVNWRUZNSWl3aVpYaHdJam94TnpFNU9ETTRNRE0yTENKdWFXUjRJam9pWkRNelpUa3hNRGd0TVRReE1TMHhNV1ZtTFdJeU1ETXROMlZsWlRZNFpUVTFZalkySWl3aWFXRjBJam94TnpFNU9ETTBORE0yTENKMWFXUjRJam9pTnpOa1lXRTNOemN1TXpabVpDNDBPRGt5TGpoa1l6a3VOMkUyTlRjMU9XRTVPVE0yUkRJemRuaGxTbVp5TmlKOS5LSjRBTUc1SkRPTFFpZjZLUzdvLXpCeFhnUDY5WTlVVXRSYVNVU0RST1pTZUVxREpocGxhV1VFbUVzejVkY2VjX2tYNGdmdHhXOVB5M09zbDVLa1NxdzNYYUt6LVRheC1DRk1Kcm92NHYyRUNnc0g2MUI4RDZnS19kX294TUJkd2QzQ2tJeUthS0liNzJyUW95ZERhM3h6MlJaYkFSSXFOLURhMkVjRkNoeHc=";
+
+        async function fetchData(sid, pid, reterr= 0) {
+          // await fetch('https://www.flipkart.com').then(e=>{return e.text()}).then(console.log)
+          // return;
+
+          try {
+            switch (+sid) {
+              case 1:
+                let url =
+                  "https://2.rome.api.flipkart.com/api/4/page/fetch?cacheFirst=false";
+
+                const headers = {
+                  headers: {
+                    Cookie:
+                      "T=TI168576955482800183183070698450565307077989065959972222043300107997;",
+                    "content-type": "application/json",
+                    "x-user-agent":
+                      "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 FKUA/msite/0.0.3/msite/Mobile",
+                  },
+                  timeout: 4000,
+                  // withCredentials: true,
+                  //   proxy
+                };
+                const bdata = {
+                  pageUri: "/p/p/p?pid=" + pid,
+                  locationContext: { pincode: 302001, changed: false },
+                };
+
+                let p_data = await axios.post(url, bdata, headers);
+                // let p_data = await fetch(url, {method:'POST', ...headers,body: JSON.stringify(bdata)});
+                // const data = await p_data.json();
+                // console.log(p_data?.data?.RESPONSE?.pageData?.pageContext);
+                let p_d = p_data?.data?.RESPONSE?.pageData?.pageContext;
+                if (!p_d) throw new Error("No data found");
+                let imgurl = p_d?.imageUrl;
+
+                imgurl = imgurl?.replace("{@width}", 400);
+                imgurl = imgurl?.replace("{@height}", 400);
+                imgurl = imgurl?.replace("{@quality}", 90);
+                let final_data = {
+                  pid,
+                  sid: 1,
+                  title: p_d?.titles?.title ? p_d?.titles?.title : "",
+                  imgurl: imgurl ? imgurl : "",
+                  mrp: p_d?.pricing?.mrp ? p_d?.pricing?.mrp : "",
+                  cat: p_d?.analyticsData?.category
+                    ? p_d?.analyticsData?.category
+                    : "",
+                  brand: p_d.brand ? p_d.brand : "",
+                  color: p_d.colorCode ? p_d.colorCode : "",
+                  price: p_d?.pricing?.finalPrice?.value
+                    ? p_d?.pricing?.finalPrice?.value
+                    : "",
+                  p_family: "",
+                  stock: p_d.isFaAvailable ? 1 : 0,
+                  category: "",
+                  stock:
+                    p_d?.trackingDataV2?.productStatus == "Out of Stock" ? 0 : 1,
+                };
+
+                // console.log(final_data, "final_data of flipkart");
+                return final_data;
+                break;
+              case 2:
+                try {
+                  // return false;
+                  let url =
+                    "https://www.amazon.in/gp/twister/dimension?isDimensionSlotsAjax=1&asinList=" +
+                    pid;
+                  let p_data = await axios.get(url);
+                  // console.log(p_data?.data?.Value?.content?.twisterSlotJson,"pdata=");
+                  return p_data?.data?.Value?.content?.twisterSlotJson;
+                } catch (error) {
+                  console.log(error);
+                  if(reterr) throw new Error(error);
+                  return false;
+                }
+
+                break;
+
+              //========================snapdeal=============================
+              case 4:
+                try {
+                  const url =
+                    "https://m.snapdeal.com/service/get/product/getProductDetails?responseProtocol=PROTOCOL_JSON&requestProtocol=PROTOCOL_JSON&apiKey=snapdeal&productId=" +
+                    pid;
+                  const { data } = await axios.get(url);
+                  if (data?.successful === false) throw new Error(`404 ${pid}`);
+                  let p_d = data?.productDetailsSRO;
+
+                  let final_data = {
+                    pid,
+                    sid: 4,
+                    title: p_d?.pname ? p_d?.pname : "",
+                    imgurl: p_d?.imgs?.[0] ? p_d?.imgs?.[0] : "",
+                    mrp: p_d?.priceInfo?.mrp ? p_d?.priceInfo?.mrp : "",
+                    cat: p_d?.pCategoryName,
+                    brand: p_d.brandName ? p_d.brandName : "",
+                    color: p_d.colorCode ? p_d.colorCode : "",
+                    price: p_d?.priceInfo?.finalPrice
+                      ? p_d?.priceInfo?.finalPrice
+                      : "",
+                    p_family: "",
+                    stock: p_d.soldOut ? 0 : 1,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+
+                  // console.log(final_data, "final_data of tatacliq");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+
+                break;
+
+              //========================jiomart 5=============================
+
+              case 5: //-----------jiomart------------
+                try {
+                  const url =
+                    "https://www.jiomart.com/catalog/productdetails/get/" + pid;
+                  let jiomart_cookie = "nms_mgo_pincode=400020";
+                  let headers = {
+                    headers: {
+                      Cookie: jiomart_cookie,
+                    },
+                    timeout: 3000,
+                  };
+
+                  let result;
+                  try {
+                    result = await axios.get(url, headers);
+                  } catch (e) {
+                    result = await axios.get(url, headers);
+                  }
+                  if (!result || !result.data.data) return false;
+                  let p_d = result.data.data;
+
+                  let final_data = {
+                    pid,
+                    sid: 5,
+                    title: p_d?.gtm_details?.name ? p_d?.gtm_details?.name : "",
+                    imgurl: p_d.image_url ? p_d.image_url : "",
+                    mrp: p_d.mrp ? p_d.mrp : "",
+                    cat: p_d?.gtm_details?.category
+                      ? p_d?.gtm_details?.category
+                      : "",
+                    brand: p_d?.gtm_details?.brand ? p_d?.gtm_details?.brand : "",
+
+                    price: p_d?.gtm_details?.price ? p_d?.gtm_details?.price : "",
+                    color: "",
+                    p_family: "",
+                    stock: p_d?.gtm_details?.status ? 1 : 0,
+                    category: p_d?.gtm_details?.category
+                      ? p_d?.gtm_details?.category
+                      : "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(final_data, "final_data");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================tatacliq 6=============================
+              case 6:
+                try {
+                  const url =
+                    "https://www.tatacliq.com/marketplacewebservices/v2/mpl/products/productDetails/" +
+                    pid +
+                    "?isPwa=true&isMDE=true";
+                  const result = await axios.get(url);
+                  const { data: p_d } = result;
+                  if (p_d?.status === "Failure") throw new Error(`404 ${pid}`);
+                  let color, color_f;
+                  // console.log(p_d);
+                  if (p_d.classifications && p_d.classifications)
+                    for (let idx = 0; idx < p_d.classifications.length; idx++) {
+                      const classifications = p_d.classifications[idx];
+                      for (
+                        let index = 0;
+                        index < classifications.specifications.length;
+                        index++
+                      ) {
+                        const spec = classifications.specifications[index];
+                        if (spec.key == "Color") color = spec.value;
+                        if (spec.key == "Color Family") {
+                          color_f = spec.value;
+                        }
+                      }
+                    }
+                  color = color || color_f;
+                  if (!color && p_d.details) {
+                    for (let index = 0; index < p_d.details.length; index++) {
+                      const spec = p_d.details[index];
+                      if (spec.key == "Color") color = spec.value;
+                      if (spec.key == "Color Family") {
+                        color_f = spec.value;
+                      }
+                    }
+                  }
+                  color = color || color_f;
+                  // if (!color) console.log(pid, " has no color");
+                  let final_data = {
+                    pid,
+                    sid: 6,
+                    title: p_d.productTitle ? p_d.productTitle : "",
+                    imgurl: p_d.galleryImagesList?.[0]?.galleryImages?.[0]?.value
+                      ? `https:${p_d.galleryImagesList?.[0]?.galleryImages?.[0]?.value}`
+                      : "",
+                    mrp: p_d.mrpPrice.value ? p_d.mrpPrice.value : "",
+                    cat: p_d.rootCategory ? p_d.rootCategory : "",
+                    brand: p_d.brandName ? p_d.brandName : "",
+                    color: color ? color : "",
+                    price: p_d.winningSellerPrice.value
+                      ? p_d.winningSellerPrice.value
+                      : "",
+                    p_family: "",
+                    stock: p_d.allOOStock ? 0 : 1,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+
+                  // console.log(final_data, "final_data of tatacliq");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+
+                break;
+
+              //========================myntra 7=============================
+
+              case 7:
+                try {
+                  // if (!initialised) {
+                  //   browser = await puppeteer.launch({headless:false,args: ['--no-sandbox','--proxy-server='+proxy_server]});
+                  //   page = await browser.newPage();
+                  //   await page.authenticate({ username, password });
+                  //   await page.setUserAgent(
+                  //     "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                  //   );
+                  //   initialised = 1;
+                  //   await page.goto(home_URL);
+                  // }
+
+                  if (pid == "start") return;
+                  let url = "https://www.myntra.com/gateway/v2/product/" + pid;
+                  if (pid == "checkip") url = "http://ip-api.com/json";
+
+                  let headers = {
+                    headers: {
+                      "User-Agent":
+                        "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+                      Cookie,
+                    },
+                    timeout: 3000,
+                    // proxy,
+                  };
+
+                  let result;
+                  try {
+                    result = await axios.get(url, headers);
+                  } catch (e) {
+                    result = await axios.get(url, headers);
+                  }
+                  // console.log(result);
+                  // console.log(result.data, "result.data");
+                  if (!result || !result.data) return false;
+                  const innerText = result.data;
+                  if (pid == "checkip") return innerText;
+                  // const innerText = await result.json();
+                  // console.log(innerText);
+
+                  //   await page.goto(url);
+                  // await page.content();
+
+                  // innerText = await page.evaluate(() => {
+                  //   try{
+                  //     return JSON.parse(document.querySelector("body").innerText);
+                  //   }
+                  //   catch(e){
+                  //     return document.querySelector("body").innerText
+                  //   }
+                  // });
+                  // console.log(innerText, "result.data");
+                  let p_d = innerText?.style;
+                  // let p_d = result.data?.style;
+                  // console.log(p_d, "from myntra");
+                  let image = "";
+
+                  if (
+                    p_d?.media &&
+                    p_d?.media?.albums &&
+                    p_d?.media?.albums?.length &&
+                    p_d.media.albums[0].images &&
+                    p_d.media.albums[0].images.length &&
+                    p_d.media.albums[0].images[0].imageURL
+                  )
+                    // console.log(p_d?.media?.albums, "p_d?.media?.albums");
+                    image = p_d.media.albums[0].images[0].imageURL;
+                  let price_container1 = p_d?.sizes;
+                  // console.log(price_container1, "price_container1");
+                  let price_arr = [];
+                  if (price_container1 && price_container1.length) {
+                    for (let i = 0; i < price_container1.length; i++) {
+                      let price_container2 = price_container1[i]?.sizeSellerData;
+                      if (price_container2 && price_container2.length) {
+                        for (let j = 0; j < price_container2.length; j++) {
+                          let price2 = price_container2[j]?.discountedPrice;
+                          // console.log(price2, "price2");
+                          if (price2) price_arr.push(price2);
+                        }
+                      }
+                    }
+                  }
+                  // console.log(price_arr, "price_Arr");
+                  let price =
+                    price_arr?.length > 0 &&
+                    price_arr?.reduce(function (prev, curr) {
+                      return prev < curr ? prev : curr;
+                    });
+                  let final_data = {
+                    pid,
+                    sid: 7,
+                    title: p_d.name ? p_d.name : "",
+                    imgurl: image ? image : "",
+                    mrp: p_d.mrp ? p_d.mrp : "",
+                    cat:
+                      p_d.analytics.masterCategory +
+                      " > " +
+                      p_d.analytics.subCategory
+                        ? p_d.analytics.masterCategory +
+                          " > " +
+                          p_d.analytics.subCategory
+                        : "",
+                    brand: p_d?.brand.name ? p_d.brand.name : "",
+
+                    price: price ? price : "",
+                    color: p_d?.baseColour ? p_d.baseColour : "",
+                    p_family: "",
+                    stock: p_d?.flags?.outOfStock ? 0 : 1,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(final_data, "final_data");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================nykaa 8=============================
+
+              case 8:
+                try {
+                  const url =
+                    "https://www.nykaa.com/nyk/aggregator-gludo/api/search.list?search=" +
+                    pid;
+
+                  let data = await fetch(url);
+                  data = await data.json();
+                  let p_d_full = data.response.products;
+                  let p_d = p_d_full.find((product) => product.id === pid);
+
+                  if (!p_d) throw new Error("no product found");
+
+                  let categorie_list = p_d.primary_categories[0];
+                  let categories;
+                  let brand_id = p_d.brand_ids;
+                  let brand = data?.response?.filters?.brand?.find((brands) => {
+                    brands.id === brand_id;
+                  });
+
+                  if (categorie_list)
+                    categories = Object.keys(categorie_list)
+                      .map((key) => categorie_list[key]["name"])
+                      .join(" > ");
+                  let final_data = {
+                    pid,
+                    sid: 8,
+                    title: p_d?.name ? p_d?.name : "",
+                    imgurl: p_d.image_url ? p_d.image_url : "",
+                    mrp: p_d.price ? p_d.price : "",
+                    price: p_d.final_price ? p_d.final_price : "",
+                    cat: categories ? categories : "",
+                    brand: brand ? brand : "",
+                    color: "",
+                    p_family: "",
+                    stock: p_d?.is_saleable ? 1 : 0,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(final_data, "final_data");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================ajio 9=============================
+
+              case 9:
+                try {
+                  const url = "https://www.ajio.com/api/p/" + pid;
+                  let result = await axios.get(url);
+                  const { data: p_d } = result;
+                  if (p_d) {
+                    // console.log(p_d.stock, "status");
+                    let img_url =
+                      p_d.baseOptions?.[0]?.options?.[0]?.modelImage?.url;
+                    if (!img_url && p_d?.images.length > 0) {
+                      let img_arr = p_d.images.find((item) => {
+                        return item.format === "product";
+                      });
+                      img_url = img_arr.url;
+                    }
+                    if (!img_url) {
+                      img_url = p_d.images?.[0]?.url;
+                    }
+
+                    let final_data = {
+                      pid,
+                      sid: 9,
+                      title: p_d?.brandName
+                        ? p_d?.brandName + " " + p_d.name
+                        : p_d.name || "",
+                      imgurl: img_url ? img_url : "",
+                      mrp: p_d?.wasPriceData?.value
+                        ? p_d?.wasPriceData?.value
+                        : "",
+                      cat: p_d?.brickSubCategory ? p_d?.brickSubCategory : "",
+                      brand: p_d?.brandName ? p_d?.brandName : "",
+                      color: p_d?.verticalColor ? p_d?.verticalColor : "",
+                      price: p_d?.price?.value ? p_d?.price?.value : "",
+                      p_family: "",
+                      stock: p_d?.stock?.stockLevel ? 1 : 0,
+                      category: "",
+                    };
+                    // final_data = JSON.stringify(final_data);
+                    // console.log(final_data, "final_data");
+                    return final_data;
+                  } else {
+                    return false;
+                  }
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(e, "error");
+                  return false;
+                }
+                break;
+
+              //========================pepperfry 10=============================
+
+              case 10:
+                try {
+                  //   const url = "https://www.pepperfry.com/product-api/vip/v1/vipOBT?";
+                  // const url = `https://www.pepperfry.com/product-api/vip/v1/vipRealtime?product_id=${pid}&called_from_vip=1&requestPlatform=web`;
+                  // pid = returnPID(
+                  //   10,
+                  //   "https://www.pepperfry.com/product/ines-fabric-pull-out-sofa-cum-bed-in-charcoal-grey-colour-1963678.html?type=clip&pos=2&total_result=355&fromId=5&sort=sorting_score%7Cdesc&filter=%7C&cat=5"
+                  // );
+                  let url =
+                    "https://www.pepperfry.com/product-api/clip/newclip?requestUrl=site_product/search&offset=0&size=8&requestPlatform=web&sort_field=sorting_score&sort_by=desc&q=" +
+                    pid;
+                  //   console.log(pid, "pid");
+                  //   let headers = {
+                  //     headers: {
+                  //       "User-Agent":
+                  //         "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+                  //       Cookie:
+                  //         "header_flash_cookie=1; segment_token=e6e3cd2aab0b772aea230030beadf4ad7997699fc79081b98c5ce9b5f7679ba5; _gcl_au=1.1.1864203521.1687868190; unbxd.userId=uid-1687868190815-44520; _fbp=fb.1.1687868191049.2122001435; ab.storage.deviceId.211b9cd7-cab4-40f3-a376-f3b9e28db6fc=%7B%22g%22%3A%2261274179-3db5-277f-86ed-01b40ebd7d6b%22%2C%22c%22%3A1687863356147%2C%22l%22%3A1687868192894%7D; ajs_anonymous_id=f6d40bc5-0f99-42a5-89c3-77891c94d636; analytics_session_id=1687868192914; _gaexp=GAX1.2.PSGq4uThR6qQGeumXUhr2w.19594.0!dgj1KrZ_SVWxjwWKsX3JtQ.19616.0; _ga_F1NJ1E2HJ2=GS1.1.1687868199.1.0.1687868199.0.0.0; credits_redeemed=true; _uetvid=729d8af014e411ee98f00569d9511424; _ga=GA1.2.26881829.1687868191; ab.storage.sessionId.211b9cd7-cab4-40f3-a376-f3b9e28db6fc=%7B%22g%22%3A%222a4aa996-ff49-cf59-5724-7b04736c67b6%22%2C%22e%22%3A1687870509565%2C%22c%22%3A1687868192893%2C%22l%22%3A1687868709565%7D; analytics_session_id.last_access=1687868709613; mf_5b682ad1-e019-4731-80c4-d3703b7fd36d=|.73195130.1687868709644|1687868193909||0|||0|0|74.60912; cto_bundle=ExcwRF9zcGZxd3VDeTJpeEVDYmgxR2VwbTFUZ3IybnVMaG4zUGZyNlU0aDdMaTJPelN4cHloTGhhbXlZWDFtbVlZaHklMkZSa1FNbWdmakNpOTV6dUZ6TzIlMkYyS0ttWnl1dDZoc1ZFZkhBTGtZUWlKQVVtUk5EMEx4cXYxN2hBeTFGZFRyU3ZyeWN6cUNLQVZRRzJLTkVUYTdhSHNRJTNEJTNE; _ga_X6DBR5PJF0=GS1.1.1687926589.2.1.1687926591.58.0.0; frontend=f24d89e1050212d19a72d70b702cde05aa2858538371c716232b37deb37cd004; mid=8beb9712017a40242dd9e9ff85625c8e954487ce533553eca30aa2e829a4ac04; uid=8beb9712017a40242dd9e9ff85625c8e954487ce533553eca30aa2e829a4ac04; _abck=D088D4DC07D496F4C07FAFA14FD1511D~0~YAAQLRwgF2F8wAKJAQAAEToDVApMxBrWYBF/wXjSmVmRm3+0fd07OCMY5MZ0gAGKLqDrkqvcwjHQ0oowAz2heLjCfroo5U2tItt8as5eR0chXy0TBdtYtfdz91W24z5NoPlBPU22NMBxY6l/T46xlWRV2NcVGX4cG1zcAfj6uwT4xVpQbtzTq4qijJJp/qZu0b0n0SS7TstMXSZJ4FpWGyroxd6Ljm3bCd3A6fTZqYiR9P/MR1FuLNs9kjExYzjmdJ94cZAliCp2S9kSiyfqWqp9k5lZWX9abme4UXyZ/zVULr9BWOrf2UwXnhydp8z6zo0wL24rxJjaFOcuBybyZwTGi6UVCS6hgEhB7Vrj1DyhOdrrbN3mAGEp2V5TeCwGWFN1Til8FEa5GmdeFuZ2C6n4Pt5QoAmqjgvI~-1~-1~-1; bm_sz=2A2666BAA1ABC6BDC9796E49643BD3A5~YAAQLRwgF2R8wAKJAQAAEToDVBSxjPotoenN+MYN3zDH0Y+vrIWc2F3IqMjbpxckD22NNIR3y/l2bsTwra1PIEhM3MABU1ZokBfW/3O5quex+4y3r8f64ruvcQoPVdHNS3WEo7RDkHLHWIJasMt+X1iP7OCOkZMA6V+/W0FyLxHvZfJh+H/ZeJyOGFWqlKYOw0K0XxvBJ2hUIQ7hx30LTzcxargBC6o4OJ7VaVW/VD0rzIIqurDSNUjSz2ae5SpgpUl2/rkCFZqfWBwG9eHfP/0pmrZ4wZrjrRnpCIrsz9xb9LPP6Dk=~3420985~4473143",
+                  //     },
+                  //     timeout: 3000,
+                  //     // proxy,
+                  //   };
+
+                  //   let data = [];
+                  //   data.push(pid);
+                  // let data_to_send = {}; //{ product_ids: pid };
+                  //   let data_to_send = { product_ids: pid };
+                  let { data } = await axios.post(url);
+                  //   let p_data = await axios.get(`https://www.pepperfry.com/product-api/vip/v1/vipRealtime?product_id=${pid}&called_from_vip=1&requestPlatform=web`);
+                  // console.log(data.data, "p_data");
+                  let p_d_full = [];
+                  //   if (p_data.data && p_data.data.data && p_data.data.data.length > 0) {
+                  //     p_d_full = p_data.data.data;
+                  //   }
+                  if (data.data && data.data.product_data)
+                    p_d_full = data.data.product_data;
+                  // console.log("p_d_full", p_d_full);
+                  let p_d = p_d_full[0];
+                  const final_data = {
+                    pid,
+                    sid: 10,
+                    title: p_d.name ? p_d.name : "",
+                    imgurl: p_d.image
+                      ? "https://ii3.pepperfry.com/media/catalog/product/" +
+                        p_d.image
+                      : "",
+                    mrp: p_d.price ? p_d.price : "",
+                    cat: "",
+                    brand: p_d.brands_name ? p_d.brands_name : "",
+                    color: "",
+                    price: p_d.you_pay_price ? p_d.you_pay_price : "",
+                    p_family: "",
+                    stock: p_d.stock_status ? p_d.stock_status : "",
+                    category: "",
+                  };
+
+                  // console.log(final_data, "final_data"); // Log the final_data array
+                  return final_data;
+                  // Further actions with the final_data array...
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error, "error in pepperfry");
+                  return false;
+                }
+                break;
+
+              //========================firstcry 11=============================
+
+              case 11:
+                try {
+                  const url =
+                    "https://www.firstcry.com/svcs/search.svc/GetSearchPagingProducts_new?Q=" +
+                    pid;
+                  let { data } = await axios.get(url);
+                  let p_d_full = JSON.parse(data?.ProductResponse).hits?.hit;
+                  const product = p_d_full.find(
+                    (item) => item.fields.f__productid === pid
+                  );
+                  const p_d = product ? product.fields : null;
+
+                  if (!p_d) throw new Error("no product found");
+                  let color = p_d?.colorname?.split("#")[1];
+                  // console.log(p_d, "pd");
+                  let final_data = {
+                    pid,
+                    sid: 8,
+                    title: p_d.productname ? p_d.productname : "",
+                    imgurl:
+                      "https://cdn.fcglcdn.com/brainbees/images/products/438x531/" +
+                      pid +
+                      "a.jpg"
+                        ? "https://cdn.fcglcdn.com/brainbees/images/products/438x531/" +
+                          pid +
+                          "a.jpg"
+                        : "",
+                    mrp: p_d.mrp ? p_d.mrp : "",
+                    price: p_d.discountedprice ? p_d.discountedprice : "",
+                    cat: p_d.product_types ? p_d.product_types : "",
+                    brand: p_d.bname ? p_d.bname : "",
+                    color: color ? color : "",
+                    p_family: "",
+                    stock: p_d.stock === "0" ? 0 : 1,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(final_data, "final_data");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================nykaafashion 12=============================
+
+              case 12:
+                try {
+                  const url =
+                    // "https://www.nykaafashion.com/rest/appapi/V2/categories/products?searchTerm=" +
+                    // pid;
+                    `https://www.nykaafashion.com/rest/appapi/V3/products/id/${pid}?currency=INR&country_code=IN&size_data=true&platform=MSITE`;
+                  let result = await fetch(url);
+                  result = await result.json();
+                  // console.log(result);
+                  let item = result?.response?.product;
+                  if (!item) throw new Error("not found");
+                  //   let final_data = p_data?.map((item) => {
+                  //     if(item.id == pid)
+                  let final_data = {
+                    pid,
+                    sid: 12,
+                    title:
+                      item.title + " " + item.subTitle
+                        ? item.title + " " + item.subTitle
+                        : "",
+                    imgurl: item.imageUrl ? item.imageUrl : "",
+                    mrp: item.price ? item.price : "",
+                    cat: "",
+                    brand: item.title ? item.title : "",
+                    color: "",
+                    price: item.discountedPrice ? item.discountedPrice : "",
+                    p_family: "",
+                    stock: item.isOutOfStock ? 1 : 0,
+                    category: "",
+                  };
+                  // f_data = JSON.stringify(f_data);
+                  // console.log(f_data, "final_data in nykaaFashion")
+                  //   });
+                  // console.log(final_data, "final_data in nykaaFashion")
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================croma 13=============================
+
+              case 13:
+                try {
+                  const url =
+                    "https://api.croma.com/products/allchannels/v2/carousel/list?fields=CAROUSELS&productList=" +
+                    pid;
+                  const headers = {
+                    "User-Agent":
+                      "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+                  };
+                  let { data } = await axios.get(url, {
+                    headers: headers,
+                    timeout: 5000,
+                    // proxy,
+                  });
+                  if (!data || !data.listOfProduct)
+                    throw new Error("not data found");
+                  let stock = 1;
+                  try {
+                    const availablity_url =
+                      "https://api.croma.com/inventory/oms/v2/tms/details-pwa/";
+                    let adata = {
+                      promise: {
+                        allocationRuleID: "SYSTEM",
+                        checkInventory: "Y",
+                        organizationCode: "CROMA",
+                        sourcingClassification: "EC",
+                        promiseLines: {
+                          promiseLine: [
+                            {
+                              fulfillmentType: "HDEL",
+                              itemID: pid,
+                              requiredQty: "1",
+                              shipToAddress: { zipCode: "302001" },
+                            },
+                          ],
+                        },
+                      },
+                    };
+                    let availablity_data = await axios.post(
+                      availablity_url,
+                      adata,
+                      {
+                        headers: headers,
+                        timeout: 5000,
+                        //   proxy,
+                      }
+                    );
+                    if (
+                      !availablity_data ||
+                      !availablity_data?.data?.promise?.suggestedOption?.option
+                        ?.promiseLines?.promiseLine?.[0]?.itemID
+                    )
+                      stock = 0;
+                  } catch (err) {
+                    stock = 1;
+                  }
+                  let p_data = data?.listOfProduct?.[0];
+                  let final_data = {
+                    pid,
+                    sid: 13,
+                    title: p_data.name ? p_data.name : "",
+                    imgurl: p_data.images?.[0]?.url
+                      ? p_data.images?.[0]?.url
+                      : "",
+                    mrp: p_data.mrp?.value ? p_data.mrp?.value : "",
+                    cat: "",
+                    brand: "",
+                    color: "",
+                    price: p_data?.price?.value ? p_data?.price?.value : "",
+                    p_family: "",
+                    stock,
+                    category: "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(f_data, "final_data in nykaaFashion")
+
+                  // console.log(final_data, "final_data in croma");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              //========================meesho 15=============================
+
+              case 16: //-----------purplee------------
+                try {
+                  const url = `https://www.purplle.com/neo/catalog/basicinfo?product_id=${pid}&mode_device=desktop`;
+
+                  let headers = {
+                    timeout: 3000,
+                  };
+
+                  let result;
+                  try {
+                    result = await axios.get(url, headers);
+                  } catch (e) {
+                    result = await axios.get(url, headers);
+                  }
+                  if (!result || !result.data.item) return false;
+                  let p_d = result.data.item;
+
+                  let final_data = {
+                    pid,
+                    sid: 15,
+                    title: p_d?.name ? p_d?.name : "",
+                    imgurl: p_d.images?.[0].primaryImage
+                      ? p_d.images?.[0].primaryImage
+                      : "",
+                    mrp: p_d.availability.mrp ? p_d.availability.mrp : "",
+                    cat: p_d?.itemCategory ? p_d?.itemCategory : "",
+                    brand: p_d?.itembrand ? p_d?.itembrand : "",
+                    price: p_d?.availability?.ourPrice
+                      ? p_d?.availability?.ourPrice
+                      : "",
+                    color: "",
+                    p_family: "",
+                    stock: p_d?.availability?.stockStatus == "1" ? 1 : 0,
+                    category: p_d?.itemCategory ? p_d?.itemCategory : "",
+                  };
+                  // final_data = JSON.stringify(final_data);
+                  // console.log(final_data, "final_data");
+                  return final_data;
+                } catch (error) {
+                  if(reterr) throw new Error(error);
+                  // console.log(error);
+                  return false;
+                }
+                break;
+
+              default:
+                // console.log("Invalid sid");
+                return false;
+            }
+          } catch (error) {
+            if(reterr) throw new Error(error);
+            return false;
+            // console.error(
+            //   "There was a problem with the fetch operation:",
+            //   error.message
+            // );
+          }
+          return false;
+          // try {
+          //   return false;
+          //   const response = await fetch(url, { method: "POST", headers: headers,"body": "{\"pageUri\":\"/p/p/p?pid=PRNG8RM85CUZHD2E\",\"locationContext\":{\"pincode\":302033,\"changed\":false}}" });
+          //   // Check if the response is OK (status code 200-299)
+          //   if (!response.ok) {
+          //     throw new Error('Network response was not ok');
+          //   }
+
+          //   const data = await response.json();
+          //   console.log(data);
+          // } catch (error) {
+          //   console.error("There was a problem with the fetch operation:", error.message);
+          // }
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -3,6 +3,7 @@ const http = require("http");
 const socketIo = require("socket.io");
 const app = express();
 const server = http.createServer(app);
+const path = require('path');
 
 const io = socketIo(server, {
   path: "/scrap_socket/socket.io", // Add this line to set the path
@@ -116,4 +117,9 @@ app.get("/scrap_socket/getData", (req, res) => {
       res.json(data);
     } catch (e) {}
   });
+});
+
+
+app.get("/scrap_socket/client", (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'client.html'));
 });
