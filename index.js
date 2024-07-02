@@ -5,7 +5,7 @@ const app = express();
 const server = http.createServer(app);
 const path = require('path');
 
-const Myntra_cookie = 
+let Myntra_cookie = 
 "at=ZXlKcmFXUWlPaUl5SWl3aWRIbHdJam9pU2xkVUlpd2lZV3huSWpvaVVsTXlOVFlpZlEuZXlKemRXSWlPaUkzTTJSaFlUYzNOeTR6Tm1aa0xqUTRPVEl1T0dSak9TNDNZVFkxTnpVNVlUazVNelpFTWpOMmVHVktabkkySWl3aVlYQndUbUZ0WlNJNkltMTViblJ5WVNJc0ltbHpjeUk2SWtsRVJVRWlMQ0owYjJ0bGJsOTBlWEJsSWpvaVlYUWlMQ0p6ZEc5eVpVbGtJam9pTWpJNU55SXNJbXh6YVdRaU9pSXhaVE16T0dVME1TMDFNbU5pTFRRME9EZ3RZbVUyT1MwMk5EaGlaV0ZtWVRrNVlqQXRNVGN4TlRreU5USTFOakl6TWlJc0luQWlPaUl5TWprM0lpd2lZWFZrSWpvaWJYbHVkSEpoTFRBeVpEZGtaV00xTFRoaE1EQXROR00zTkMwNVkyWTNMVGxrTmpKa1ltVmhOV1UyTVNJc0luQndjeUk2TVRBc0ltTnBaSGdpT2lKdGVXNTBjbUV0TURKa04yUmxZelV0T0dFd01DMDBZemMwTFRsalpqY3RPV1EyTW1SaVpXRTFaVFl4SWl3aWMzVmlYM1I1Y0dVaU9qQXNJbk5qYjNCbElqb2lRa0ZUU1VNZ1VFOVNWRUZNSWl3aVpYaHdJam94TnpFNU9ETTRNRE0yTENKdWFXUjRJam9pWkRNelpUa3hNRGd0TVRReE1TMHhNV1ZtTFdJeU1ETXROMlZsWlRZNFpUVTFZalkySWl3aWFXRjBJam94TnpFNU9ETTBORE0yTENKMWFXUjRJam9pTnpOa1lXRTNOemN1TXpabVpDNDBPRGt5TGpoa1l6a3VOMkUyTlRjMU9XRTVPVE0yUkRJemRuaGxTbVp5TmlKOS5LSjRBTUc1SkRPTFFpZjZLUzdvLXpCeFhnUDY5WTlVVXRSYVNVU0RST1pTZUVxREpocGxhV1VFbUVzejVkY2VjX2tYNGdmdHhXOVB5M09zbDVLa1NxdzNYYUt6LVRheC1DRk1Kcm92NHYyRUNnc0g2MUI4RDZnS19kX294TUJkd2QzQ2tJeUthS0liNzJyUW95ZERhM3h6MlJaYkFSSXFOLURhMkVjRkNoeHc=";
 const io = socketIo(server, {
   path: "/scrap_socket/socket.io", // Add this line to set the path
@@ -119,6 +119,9 @@ app.get("/scrap_socket/getData", (req, res) => {
       clearTimeout(timeout);
       res.json(data);
     } catch (e) {}
+  });
+  clientSocket.on(`response_myncookie`, (data) => {
+      Myntra_cookie = data;
   });
 });
 
