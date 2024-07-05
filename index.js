@@ -21,7 +21,7 @@ let connectedClients = [];
 
 const store_min_version_support = {
   1: 1,
-  2: 2,
+  2: 3,
   3: 999,
   4: 2,
   5: 2,
