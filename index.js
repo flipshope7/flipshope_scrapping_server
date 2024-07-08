@@ -132,5 +132,6 @@ app.get("/scrap_socket/getData", (req, res) => {
 
 
 app.get("/scrap_socket/client", (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'client.html'));
+  // res.sendFile(path.join(__dirname, 'public', 'client.html'));
+  res.json({total: connectedClients.length, list: JSON.stringify(connectedClients) });
 });
