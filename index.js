@@ -46,7 +46,7 @@ const store_min_version_support = {
 io.on("connection", (socket) => {
   const version = socket.handshake?.query?.version || 1;
   console.log(`connected Client: ${socket.id} && version: ${version}`);
-  // console.log('A client connected:', socket.id);
+  console.log('A client connected:', socket);
   socket.version = version;
   connectedClients.push(socket);
   // if(!connectedClients_wv.version) connectedClients_wv.version = [];
@@ -133,6 +133,16 @@ app.get("/scrap_socket/getData", (req, res) => {
 
 app.get("/scrap_socket/client", (req, res) => {
   // res.sendFile(path.join(__dirname, 'public', 'client.html'));
-  client_ids = connectedClients.map(client => client.id);
-  res.json({total: connectedClients.length, list: JSON.stringify(client_ids) });
+  client_ids = connectedClients.map(client => {
+    const ip = client.handshake.headers['x-forwarded-for'] || client.handshake.address;
+    console.log(ip);
+    return {[client.id]:ip}
+  });
+  console.log(JSON.stringify(client_ids))
+  res.json({total: connectedClients.length, client_ids});
+});
+app.get("/scrap_socket/start_client", (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'client.html'));
+  // client_ids = connectedClients.map(client => client.id);
+  // res.json({total: connectedClients.length, list: JSON.stringify(client_ids) });
 });
