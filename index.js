@@ -46,7 +46,7 @@ const store_min_version_support = {
 io.on("connection", (socket) => {
   const version = socket.handshake?.query?.version || 1;
   console.log(`connected Client: ${socket.id} && version: ${version}`);
-  console.log('A client connected:', socket);
+  console.log('A client connected:', socket.id);
   socket.version = version;
   connectedClients.push(socket);
   // if(!connectedClients_wv.version) connectedClients_wv.version = [];
