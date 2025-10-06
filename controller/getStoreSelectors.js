@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const NodeCache = require("node-cache");
 const store_cache = new NodeCache({ stdTTL: 600 /* seconds = 10 minutes */ });
@@ -16,6 +17,7 @@ const options = {
   queueLimit: 0,
 };
 
+console.log(options);
 var pool = mysql.createPool(options);
 
 pool.on("error", function (err) {
