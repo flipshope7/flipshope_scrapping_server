@@ -143,7 +143,7 @@ app.get("/scrap_socket/tbd/client", (req, res) => {
   res.json({ total: connectedClients.length, client_ids });
 });
 app.get("/scrap_socket/tbd/start_client", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "client.html"));
+  res.sendFile(path.join(__dirname, "../public", "client.html"));
   // client_ids = connectedClients.map(client => client.id);
   // res.json({total: connectedClients.length, list: JSON.stringify(client_ids) });
 });
