@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 let Myntra_cookie =
   "at=ZXlKcmFXUWlPaUl5SWl3aWRIbHdJam9pU2xkVUlpd2lZV3huSWpvaVVsTXlOVFlpZlEuZXlKemRXSWlPaUkzTTJSaFlUYzNOeTR6Tm1aa0xqUTRPVEl1T0dSak9TNDNZVFkxTnpVNVlUazVNelpFTWpOMmVHVktabkkySWl3aVlYQndUbUZ0WlNJNkltMTViblJ5WVNJc0ltbHpjeUk2SWtsRVJVRWlMQ0owYjJ0bGJsOTBlWEJsSWpvaVlYUWlMQ0p6ZEc5eVpVbGtJam9pTWpJNU55SXNJbXh6YVdRaU9pSTNNalkyTW1KaFpTMHdOalJtTFRRME1qa3RZVFkwWlMwek5tSXdZV1JoTVRBeE56SXRNVGMwTURneE1Ua3pOVEF3TXlJc0luQWlPaUl5TWprM0lpd2lZWFZrSWpvaWJYbHVkSEpoTFRBeVpEZGtaV00xTFRoaE1EQXROR00zTkMwNVkyWTNMVGxrTmpKa1ltVmhOV1UyTVNJc0luQndjeUk2TVRBc0ltTnBaSGdpT2lKdGVXNTBjbUV0TURKa04yUmxZelV0T0dFd01DMDBZemMwTFRsalpqY3RPV1EyTW1SaVpXRTFaVFl4SWl3aWMzVmlYM1I1Y0dVaU9qQXNJbk5qYjNCbElqb2lRa0ZUU1VNZ1VFOVNWRUZNSWl3aVpYaHdJam94TnpVeE5UTTVNemd5TENKdWFXUjRJam9pWWpSbE1HVTROell0WVRBeE9TMHhNV1ZtTFRnM05HUXRZMkU1TWpZek9EQXpOelkySWl3aWFXRjBJam94TnpVeE5UTTFOemd5TENKMWFXUjRJam9pTnpOa1lXRTNOemN1TXpabVpDNDBPRGt5TGpoa1l6a3VOMkUyTlRjMU9XRTVPVE0yUkRJemRuaGxTbVp5TmlKOS5RTHNneGtPZmdIY2VXUVRYcXltd2ZmN0hONVlwbU9tYnc5bWFGdHJYREN4dkxUNl83Z0FJbU14c0kwLWU1eFJVRXNUUzhNRGN5SWZrZlVtbXp0dkVoNHBlQnFrNDF3YzYzZEk0eTZELTBHTHlYMDY5RjQ5cU9OOFQ4aHBWSFc2YjAxS3h4QkpncVFNZkZPdmt0OVZSRkRObXJLbUhtaW1US3BPWXlBZDY4MGc=";
 const io = socketIo(server, {
-  path: "/tbd/scrap_socket/socket.io", // Add this line to set the path
+  path: "/scrap_socket/tbd/socket.io", // Add this line to set the path
   cors: {
     origin: "*", // This allows any origin, adjust according to your needs
     methods: ["GET", "POST"],
@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
 //    sendMessageToRandomClient({sid:1,pid:'PRNG8RM85CUZHD2E'});
 //}, 5000);
 
-app.get("/tbd/scrap_socket/getData", (req, res) => {
+app.get("/scrap_socket/tbd/getData", (req, res) => {
   const sid = req.query.sid;
   const pid = req.query.pid;
 
@@ -127,7 +127,7 @@ app.get("/tbd/scrap_socket/getData", (req, res) => {
   });
 });
 
-app.get("/tbd/scrap_socket/client", (req, res) => {
+app.get("/scrap_socket/tbd/client", (req, res) => {
   // res.sendFile(path.join(__dirname, 'public', 'client.html'));
   client_ids = connectedClients.map((client) => {
     const ip =
@@ -138,7 +138,7 @@ app.get("/tbd/scrap_socket/client", (req, res) => {
   console.log(JSON.stringify(client_ids));
   res.json({ total: connectedClients.length, client_ids });
 });
-app.get("/tbd/scrap_socket/start_client", (req, res) => {
+app.get("/scrap_socket/tbd/start_client", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "client.html"));
   // client_ids = connectedClients.map(client => client.id);
   // res.json({total: connectedClients.length, list: JSON.stringify(client_ids) });
